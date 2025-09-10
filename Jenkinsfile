@@ -1,36 +1,27 @@
 pipeline {
-    agent any
+  agent none
+  environment { IMAGE_NAME = "kartikeyp/flask-hello" }
 
-    environment {
-        IMAGE_NAME = "kartikeyp/flask-app"
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                // Pull latest code
-                checkout scm
-            }
+    stage('Build (timestamp tag)') {
+      agent {
+        docker {
+          image 'docker:24.0'
+          args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    // dynamic tag = current timestamp
-                    def tag = sh(script: "date +%s", returnStdout: true).trim()
-                    env.IMAGE_TAG = tag
-
-                    sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                    """
-                }
-            }
-        }
-
-        stage('Show Images') {
-            steps {
-                sh "docker images | head -n 5"
-            }
-        }
+      }
+      steps {
+        script { env.IMAGE_TAG = sh(script: 'date +%s', returnStdout: true).trim() }
+        sh """
+          echo "Building: ${IMAGE_NAME}:${IMAGE_TAG}"
+          docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+          docker images | grep ${IMAGE_NAME}
+        """
+      }
     }
+  }
 }
