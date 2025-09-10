@@ -4,9 +4,11 @@ pipeline {
 
   stages {
     stage('Checkout') {
-      steps { checkout scm }
+      agent any
+      steps {
+        git branch: 'main', url: 'https://github.com/kartikeyp-hike/flask2'
+      }
     }
-
     stage('Build (timestamp tag)') {
       agent {
         docker {
